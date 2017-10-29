@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8" />
+	<title>Pnut.io PCA tool thingy</title>
+	<link rel="stylesheet" href="styles/style_index.css" />
+</head>
+<body>
+	<p>
+		This website currently is the home for two <a href="https://pnut.io">pnut.io</a> tools, both related to so-called Post-Count-Achievements (PCAs). Take a look at the <a href="http://wiki.pnut.io/PCA">wiki</a>!
+		<br />
+		Note that this website, and therefore both tools, are currently hosted on a free host, until I'm happy enough with them (especially the bot) to put it on an actual webserver. So expect it to be slow and unresponsive. Also, it 'sleeps' for a while every day.
+		<br />
+		For any questions/feedback/etc contact me (that is <a href="https://pnut.io/@hutattedonmyarm" rel="me">@hutattedonmyarm on pnut</a>)
+	</p>
+	<h2>PCA to JSON</h2>
+	<p>
+		The first one is an unnamed PCA to JSON	service, basically grabbing an (inofficial) list of PCAs from the wiki and outputting them as JSON for other pnut.io clients to use. Right now, there are two ways of accessing that: <a href="pca.json">the direct json file itself</a> and <a href="pca.php">the PHP script generating it</a>. Accessing the JSON file directly is faster (although probably a neglectable amount), but might be a bit outdated. (To be fair, it doesn't change very often anyways). The PHP script checks if the JSON file has been changed recently (currently: in the last 12 hours, but that is not guaranteed to stay at 12 hours), outputs the file contents if not, otherwise grabbing the data from the wiki, parsing it, updating the JSON file, and then outputting it.
+		<br />
+		This part is fully functional so far!
+	</p>
+	<h2>PCA-Bot</h2>
+	<p>
+		Not something you can see in action on here, but also hosted here and also maintained by me: <a href="https://pnut.io/@pca_bot">@pca_bot</a>. Follow it, and it will mention you, whenever you reach a new PCA. This won't happen instantly, I'll set it to periodically (maybe once an hour? Not sure yet) check. This is also not ready in any kind or form yet.
+	</p>
+	<p>
+		Ways to thank me:
+		<ul>
+			<li><a href="https://paypal.me/hutattedonmyarm">Paypal</a></li>
+			<li>BTC: <code>1M7jWef9DT3Dc5y5aemec99NUuPnAzkqkn</code></li>
+		</ul>
+	</p>
+</body>
+</html>
