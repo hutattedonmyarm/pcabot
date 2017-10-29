@@ -1,11 +1,13 @@
 <?php
 $redirect_uri = 'http://wedro.online/pnutauth.php';
+$client_id = 'RwHDh73PtU0It4DdKhwh2GEagBoO1ELD';
+$client_secret = file_get_contents('../clientsecret')
 if (isset($_GET['code'])) {
 	$code = $_GET['code'];
 	$postdata = http_build_query(
 		array(
-			'client_id' => 'RwHDh73PtU0It4DdKhwh2GEagBoO1ELD',
-			'client_secret' => 'sRyV8OwPM1hm8BSbtoKVRVpscRfb4tif',
+			'client_id' => $client_id,
+			'client_secret' => $client_secret,
 			'code' => $code,
 			'redirect_uri' => $redirect_uri,
 			'grant_type'=> 'authorization_code'
@@ -23,6 +25,6 @@ if (isset($_GET['code'])) {
 	file_put_contents('../access_token', $resp['access_token']);
 	header('Location: http://wedro.online/Check_PCA.php');
 } else {
-	header('Location: https://pnut.io/oauth/authenticate?client_id=RwHDh73PtU0It4DdKhwh2GEagBoO1ELD&redirect_uri='.urlencode($redirect_uri).'&scope=write_post&response_type=code');
+	header('Location: https://pnut.io/oauth/authenticate?client_id='.$client_id.'&redirect_uri='.urlencode($redirect_uri).'&scope=write_post&response_type=code');
 }
 ?>

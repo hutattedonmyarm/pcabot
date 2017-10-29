@@ -43,36 +43,20 @@ class User {
    }
 
    public function get_highest_pca($clubs) {
-   	/*
-   	if (preg_replace('/\s+/', '', $clubs[0]['post_count']) > $this->number_posts) {
+   	$key = $this->get_next_pca_key($clubs)-1;
+   	if ($key == -1) {
    		return array();
    	}
-   	foreach ($clubs as $key => $club) {
-   		if (preg_replace('/\s+/', '', $club['post_count']) > $this->number_posts) {
-   			return $clubs[$key-1];
-   		}
-   	}
-   	*/
-   	return $clubs[$this->get_next_pca_key($clubs)-1];
+   	return $clubs[$key];
    }
 
    public function get_next_pca($clubs) {
-   	/*
-   	if (preg_replace('/\s+/', '', $clubs[0]['post_count']) > $this->number_posts) {
-   		return array();
-   	}
-   	foreach ($clubs as $key => $club) {
-   		if (preg_replace('/\s+/', '', $club['post_count']) > $this->number_posts) {
-   			return $clubs[$key];
-   		}
-   	}
-   	*/
    	return $clubs[$this->get_next_pca_key($clubs)];
    }
 
    private function get_next_pca_key($clubs) {
    	if (preg_replace('/\s+/', '', $clubs[0]['post_count']) > $this->number_posts) {
-   		return array();
+   		return 0;
    	}
    	foreach ($clubs as $key => $club) {
    		if (preg_replace('/\s+/', '', $club['post_count']) > $this->number_posts) {
@@ -148,7 +132,7 @@ class API {
 	}
 }
 #Get all clubs
-$clubs = json_decode(file_get_contents('pca.php'), true);
+$clubs = json_decode(file_get_contents('http://wedro.online/pca.php'), true);
 $last_notification_file = '../last_notification.json';
 $last_notification_dict = array();
 if (file_exists($last_notification_file)) {
@@ -192,7 +176,5 @@ foreach ($followers as $user) {
 $f = fopen($last_notification_file, 'w');
 fwrite($f, json_encode($last_notification_dict));
 fclose($f);
-
-#Idea: Multiple API objects: One for the bot, one for each authenticated user. Authenticated users can choose between browser notifications/PMs/Mentions on new PCAs and will be updated via App Streams instead of interval-based checking
 
 ?>

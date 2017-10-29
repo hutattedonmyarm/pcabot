@@ -1,5 +1,4 @@
 <?php
-$auth_token = 'DOLORSITAmETjhDvECx7L01G0hEq67qVu1f9UARNlzvLjjoXdYuOAXl_fBpLfQDLKl3j02lH1Ci7iqtJRD4zQFw_SNis9Hsv9c';
 $filename = 'pca.json';
 if (file_exists($filename) && (time()-720 > filemtime($filename))) {
     echo file_get_contents($filename);
