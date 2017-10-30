@@ -68,7 +68,7 @@ class User {
 
 class API {
 	public $access_token = '';
-	private const api_endpoint = 'https://api.pnut.io/v0';
+	private static $api_endpoint = 'https://api.pnut.io/v0';
 
 	private function get_data($endpoint, $parameters, $method='GET', $contenttype='application/x-www-form-urlencoded') {
 		$postdata = http_build_query($parameters);
@@ -85,13 +85,13 @@ class API {
 	}
 
 	public function write_post($posttext) {
-		$post_endpoint = self::api_endpoint.'/posts';
+		$post_endpoint = self::$api_endpoint.'/posts';
 		$parameters = array('text' => $posttext);
 		$this->get_data($post_endpoint, $parameters, 'POST');
 	}
 	
 	public function get_user($user_id) {
-		$user_endpoint = self::api_endpoint.'/users/'.$user_id;
+		$user_endpoint = self::$api_endpoint.'/users/'.$user_id;
 		return new User($this->get_data($user_endpoint));
 	}
 
@@ -100,7 +100,7 @@ class API {
 		$users = array();
 		do {
 			write_log("Getting followers before id: ".$before_id);
-			$followers_endpoint = self::api_endpoint.'/users/me/followers';
+			$followers_endpoint = self::$api_endpoint.'/users/me/followers';
 			if ($before_id != null) {
 				$followers_endpoint .='?before_id='.$before_id;	
 			}
@@ -132,7 +132,7 @@ class API {
 	}
 }
 #Get all clubs
-$clubs = json_decode(file_get_contents('http://wedro.online/pca.php'), true);
+$clubs = json_decode(file_get_contents('https://wedro.online/pca.php'), true);
 $last_notification_file = '../last_notification.json';
 $last_notification_dict = array();
 if (file_exists($last_notification_file)) {
@@ -148,11 +148,11 @@ if (file_exists('../access_token')) {
 	$access_token = file_get_contents('../access_token');
 	if ($access_token == False) {
 		write_log("Re-authenticating");
-		header('Location: http://wedro.online/pnutauth.php');
+		header('Location: https://wedro.online/pnutauth.php');
 	}
 } else {
 	write_log("Re-authenticating");
-	header('Location: http://wedro.online/pnutauth.php');
+	header('Location: https://wedro.online/pnutauth.php');
 }
 $api = new API;
 $api->access_token = $access_token;
