@@ -71,7 +71,11 @@ class API {
 	private static $api_endpoint = 'https://api.pnut.io/v0';
 	public $max_posttext_length = 256;
 
-	private function get_data($endpoint, $parameters, $method='GET', $contenttype='application/x-www-form-urlencoded') {
+	public function init() {
+		$this->max_posttext_length = $this->get_data('https://api.pnut.io/v0/sys/config')['data']['post']['max_length'];
+	}
+
+	private function get_data($endpoint, $parameters=array(), $method='GET', $contenttype='application/x-www-form-urlencoded') {
 		write_log("Making request to pnut API at ".$endpoint);
 		$postdata = http_build_query($parameters);
 		$context_options = array (
@@ -169,6 +173,8 @@ if (file_exists('../access_token')) {
 }
 $api = new API;
 $api->access_token = $access_token;
+$api->init();
+
 $followers = $api->get_bot_followers();
 #Check and notify. Also build notification dict
 foreach ($followers as $user) {
