@@ -69,8 +69,10 @@ class User {
 class API {
 	public $access_token = '';
 	private static $api_endpoint = 'https://api.pnut.io/v0';
+	public $max_posttext_length = 256;
 
 	private function get_data($endpoint, $parameters, $method='GET', $contenttype='application/x-www-form-urlencoded') {
+		write_log("Making request to pnut API at ".$endpoint);
 		$postdata = http_build_query($parameters);
 		$context_options = array (
         'http' => array (
@@ -81,12 +83,15 @@ class API {
         )
     	);
     	$context = stream_context_create($context_options);
-    	return json_decode(file_get_contents($endpoint, false, $context), true);
+    	$response = file_get_contents($endpoint, false, $context);
+    	$resp_dict = json_decode($response, true);
+    	write_log("Got server response. Meta: ".json_encode($resp_dict['meta']));
+    	return $resp_dict;
 	}
 
 	public function write_post($posttext) {
 		$post_endpoint = self::$api_endpoint.'/posts';
-		$parameters = array('text' => $posttext);
+		$parameters = array('text' => mb_strimwidth($posttext, 0, $this->max_posttext_length, ""));
 		$this->get_data($post_endpoint, $parameters, 'POST');
 	}
 	
@@ -123,7 +128,15 @@ class API {
 		$next_pca = $user->get_next_pca($clubs);
 		if ($current_pca != $last_notification) {
 			$user->last_club_notification = $current_pca;
-			$posttext = "Congratulations ".$user->user_name.", you are now a member of #".preg_replace('/\s+/', '', $current_pca).' ('.$current_pca_dict['post_count'].'+ posts)! '.$current_pca_dict['emoji'].' Next: '.$next_pca['emoji'].' at '.$next_pca['post_count'].' posts';
+			$text_components = array();
+			$posttext = "Congratulations ".$user->user_name.", you are now a member of #".preg_replace('/\s+/', '', $current_pca).$current_pca_dict['emoji'];
+			$text_components[] = ' ('.$current_pca_dict['post_count'].'+ posts)!';
+			$text_components[] = ' Next: '.$next_pca['emoji'].' at '.$next_pca['post_count'].' posts';
+			foreach ($text_components as $component) {
+				if (strlen($posttext) < ($this->max_posttext_length - strlen($component))) {
+					$posttext .= $component;
+				}
+			}
 			$this->write_post($posttext);
 			write_log($posttext);
 		} else {
@@ -132,7 +145,7 @@ class API {
 	}
 }
 #Get all clubs
-$clubs = json_decode(file_get_contents('https://wedro.online/pca.php'), true);
+$clubs = json_decode(file_get_contents('http://wedro.online/pca.php'), true);
 $last_notification_file = '../last_notification.json';
 $last_notification_dict = array();
 if (file_exists($last_notification_file)) {
@@ -148,11 +161,11 @@ if (file_exists('../access_token')) {
 	$access_token = file_get_contents('../access_token');
 	if ($access_token == False) {
 		write_log("Re-authenticating");
-		header('Location: https://wedro.online/pnutauth.php');
+		header('Location: http://wedro.online/pnutauth.php');
 	}
 } else {
 	write_log("Re-authenticating");
-	header('Location: https://wedro.online/pnutauth.php');
+	header('Location: http://wedro.online/pnutauth.php');
 }
 $api = new API;
 $api->access_token = $access_token;

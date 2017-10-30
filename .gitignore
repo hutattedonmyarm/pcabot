@@ -2,3 +2,4 @@ clientsecret
 access_token
 last_notification.json
 pca.json
+logs/
