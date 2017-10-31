@@ -128,17 +128,18 @@ class API {
 	}
 
 	public function notify_user($user, $clubs) {
+		#Get current PCA
 		$current_pca_dict = $user->get_highest_pca($clubs);
 		$current_pca = "";
 		if (array_key_exists('pca', $current_pca_dict)) {
 			$current_pca = $current_pca_dict['pca'];
-		} else {
+		} else { #If key doesn't exist, user hasn't reached a club yet
 			return;
 		}
 		$last_notification = $user->last_club_notification;
 		$next_pca = $user->get_next_pca($clubs);
-		if ($current_pca != $last_notification) {
-			$user->last_club_notification = $current_pca;
+		if ($current_pca != $last_notification) { #Havent't notified about the current club yet
+			#Stitch togetehr the post itself
 			$text_components = array();
 			$posttext = "Congratulations ".$user->user_name.", you are now a member of #".preg_replace('/\s+/', '', $current_pca).$current_pca_dict['emoji'];
 			$text_components[] = ' ('.$current_pca_dict['post_count'].'+ posts)!';
@@ -149,8 +150,9 @@ class API {
 				}
 			}
 			$this->write_post($posttext);
+			$user->last_club_notification = $current_pca;
 			write_log($posttext);
-		} else {
+		} else { #Already notified, nothing to do
 			write_log($user->user_name.' has already been notified for reaching '.$current_pca);
 		}
 	}
