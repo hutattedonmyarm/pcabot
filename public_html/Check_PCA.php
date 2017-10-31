@@ -149,9 +149,31 @@ class API {
 					$posttext .= $component;
 				}
 			}
+			/*
+			 * Steps to write post as a reply to the post which made a user enter a new club:
+			 * 1) Get number of user posts (we already have that info)
+			 * 2) Substract pca post count value from number posts. This will give us an offset
+			 * 3) Get their posts with ?count=OFFSET&include_html=0&include_counts=0&include_client=0
+			 * 4) Check if counts match. If not, get more of their posts with before_id set to the relevant ID
+			 * 5) Repeat 4 until we have the correct post
+			 * 6) Reply to it
+			 */
+			$pca_offset = ($user->number_posts - $current_pca_dict['post_count']) + 1;
+			$before_id = -1;
+			do {
+				$ep = self::$api_endpoint.'/users/'.$user->user_name.'/posts?count='.$pca_offset.'&include_html=0&include_counts=0&include_client=0&include_deleted=1';
+				$response = $this->get_data($ep, array());
+				$pca_offset -= count($response['data']);
+				$before_id = $response['meta']['min_id'];
+				echo "Received ".count($response['data'])." posts\n";
+			} while ($pca_offset > 0);
+			$deleted = $response['data'][count($response['data'])-1]['is_deleted'] == 'true';
+			$log_string = "Post that made them reach ".preg_replace('/\s+/', '', $current_pca).": ".$response['data'][count($response['data'])-1]['id'].'. Deleted?: ';
+			$log_string .= $deleted ? 'yes' : 'no';
 			$this->write_post($posttext);
 			$user->last_club_notification = $current_pca;
 			write_log($posttext);
+			write_log($log_string);
 		} else { #Already notified, nothing to do
 			write_log($user->user_name.' has already been notified for reaching '.$current_pca);
 		}
