@@ -90,7 +90,14 @@ class API {
     	$response = file_get_contents($endpoint, false, $context);
     	$resp_dict = json_decode($response, true);
     	write_log("Got server response. Meta: ".json_encode($resp_dict['meta']));
-    	return $resp_dict;
+    	$response_code = $resp_dict['meta']['code'];
+    	#Success
+    	if ($response_code >= 200 && $response_code <= 208) {
+    		return $resp_dict;	
+    	} else {
+    		write_log("Received error-response from server. ".json_encode($resp_dict['meta']), "ERROR");
+    		die();
+    	}
 	}
 
 	public function write_post($posttext) {
