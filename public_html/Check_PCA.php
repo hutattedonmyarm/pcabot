@@ -175,12 +175,15 @@ class API {
 				$reply_to = -1;
 			}
 			$deleted = $response['data'][count($response['data'])-1]['is_deleted'] == 'true';
-			$log_string = "Post that made them reach ".preg_replace('/\s+/', '', $current_pca).": ".$response['data'][count($response['data'])-1]['id'].'. Deleted?: ';
+			$log_string = "Post that made them reach ".preg_replace('/\s+/', '', $current_pca).": ".$reply_to.'. Deleted?: ';
 			$log_string .= $deleted ? 'yes' : 'no';
 			$this->write_post($posttext, $reply_to);
 			$user->last_club_notification = $current_pca;
 			write_log($posttext);
 			write_log($log_string);
+			$now = DateTime::createFromFormat('U.u', microtime(true));
+			$recent_changes_dict = ['date' => $response['data'][count($response['data'])-1]['created_at'], 'user' => $user->user_name, 'pca' => $current_pca, 'post_id' => $reply_to];
+			file_put_contents('history.json', json_encode($recent_changes_dict).PHP_EOL, FILE_APPEND | LOCK_EX);	
 		} else { #Already notified, nothing to do
 			write_log($user->user_name.' has already been notified for reaching '.$current_pca);
 		}
