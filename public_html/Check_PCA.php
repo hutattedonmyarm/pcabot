@@ -100,9 +100,12 @@ class API {
     	}
 	}
 
-	public function write_post($posttext) {
+	public function write_post($posttext, $reply_to=-1) {
 		$post_endpoint = self::$api_endpoint.'/posts';
 		$parameters = array('text' => mb_strimwidth($posttext, 0, $this->max_posttext_length, ""));
+		if ($reply_to != -1) {
+			$parameters['reply_to'] = $reply_to;
+		}
 		$this->get_data($post_endpoint, $parameters, 'POST');
 	}
 	
@@ -167,10 +170,14 @@ class API {
 				$before_id = $response['meta']['min_id'];
 				echo "Received ".count($response['data'])." posts\n";
 			} while ($pca_offset > 0);
+			$reply_to = $response['data'][count($response['data'])-1]['id'];
+			if (!isset($reply_to) || $reply_to == 0) {
+				$reply_to = -1;
+			}
 			$deleted = $response['data'][count($response['data'])-1]['is_deleted'] == 'true';
 			$log_string = "Post that made them reach ".preg_replace('/\s+/', '', $current_pca).": ".$response['data'][count($response['data'])-1]['id'].'. Deleted?: ';
 			$log_string .= $deleted ? 'yes' : 'no';
-			$this->write_post($posttext);
+			$this->write_post($posttext, $reply_to);
 			$user->last_club_notification = $current_pca;
 			write_log($posttext);
 			write_log($log_string);
