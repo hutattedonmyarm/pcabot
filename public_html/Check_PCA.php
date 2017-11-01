@@ -86,6 +86,11 @@ class API {
            'content' => $postdata
         )
     	);
+    	if ((substr($sapi_type, 0, 3) == 'cli' || empty($_SERVER['REMOTE_ADDR'])) && $method=='POST') {
+    		echo "Running from shell instead of server. Debug mode assumed. Not submitting POST requests to server!\n";
+    		echo "Would have posted if run on a server: ".$postdata."\n";
+    		return;
+		}
     	$context = stream_context_create($context_options);
     	$response = file_get_contents($endpoint, false, $context);
     	$resp_dict = json_decode($response, true);
@@ -105,7 +110,7 @@ class API {
 		$parameters = array('text' => mb_strimwidth($posttext, 0, $this->max_posttext_length, ""));
 		if ($reply_to != -1) {
 			$parameters['reply_to'] = $reply_to;
-		}
+		}		
 		$this->get_data($post_endpoint, $parameters, 'POST');
 	}
 	
@@ -183,7 +188,15 @@ class API {
 			write_log($log_string);
 			$now = DateTime::createFromFormat('U.u', microtime(true));
 			$recent_changes_dict = ['date' => $response['data'][count($response['data'])-1]['created_at'], 'user' => $user->user_name, 'pca' => $current_pca, 'post_id' => $reply_to];
-			file_put_contents('history.json', json_encode($recent_changes_dict).PHP_EOL, FILE_APPEND | LOCK_EX);	
+			$history_file = 'history.json';
+			$inp = file_get_contents($history_file);
+			$tempArray = json_decode($inp, true);
+			if ($tempArray == null) {
+				$tempArray = [];
+			}
+			array_push($tempArray, $recent_changes_dict);
+			file_put_contents($history_file, json_encode($tempArray));
+			#file_put_contents('history.json', json_encode($recent_changes_dict).PHP_EOL, FILE_APPEND | LOCK_EX);	
 		} else { #Already notified, nothing to do
 			write_log($user->user_name.' has already been notified for reaching '.$current_pca);
 		}
