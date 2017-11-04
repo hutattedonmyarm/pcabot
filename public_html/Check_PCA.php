@@ -149,7 +149,7 @@ class API {
 		if ($current_pca != $last_notification) { #Havent't notified about the current club yet
 			#Stitch togetehr the post itself
 			$text_components = array();
-			$posttext = "Congratulations ".$user->user_name.", you are now a member of #".preg_replace('/\s+/', '', $current_pca).$current_pca_dict['emoji'];
+			$posttext = "Congratulations ".$user->user_name.", you are now a member of #".preg_replace('/\s+/', '', $current_pca).' '.$current_pca_dict['emoji'];
 			$text_components[] = ' ('.$current_pca_dict['post_count'].'+ posts)!';
 			$text_components[] = ' Next: '.$next_pca['emoji'].' at '.$next_pca['post_count'].' posts';
 			foreach ($text_components as $component) {
