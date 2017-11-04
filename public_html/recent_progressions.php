@@ -13,6 +13,25 @@
 		function init() {
 			var numTH = document.getElementsByTagName('th').length;
 			startRow = (document.getElementsByTagName('tr').length * numTH) / (document.getElementsByTagName('td').length + numTH);
+			//Make filter row visible. (Hidden by default, so users with JS disabled don't see it)
+			var sr = document.getElementById('searchRow').style.display = "";
+			var datalist = document.getElementById('filterPCA');
+			if ('options' in datalist) {
+
+				xmlhttp=new XMLHttpRequest();
+				xmlhttp.onreadystatechange=function() {
+  					if (xmlhttp.readyState==4 && xmlhttp.status==200) {
+   					var pcaDict = JSON.parse(xmlhttp.responseText);
+   					var options = '';
+   					pcaDict.forEach(function(element) {
+   						options += '<option value="' + element.pca + '" />';
+   					});
+   					datalist.innerHTML = options;
+  					}
+ 				}
+ 				xmlhttp.open("GET","pca.json");
+ 				xmlhttp.send();
+			}
 			sortTable(3);
 		}
 
@@ -21,7 +40,6 @@
 		}
 
 		function changeIdFilterStyle(sender) {
-			//console.log(sender);
 			filterStyleIdx++;
 			if (filterStyleIdx >= filterStyles.length) {
 				filterStyleIdx = 0;
@@ -79,10 +97,9 @@
 
 		function filter() {
 			var table = document.getElementById(tableID);
-			
 			//Get values to filter for
 			var filterUser = document.getElementById('filterUser').value.toUpperCase();
-			var filterPCA = document.getElementById('filterPCA').value.toUpperCase();
+			var filterPCA = document.getElementById('filterPCAinput').value.toUpperCase();
 			var filterPost = document.getElementById('filterPost').value;
 			var filterDateBefore = document.getElementById('filterDateBefore').value;
 			var filterDateAfter = document.getElementById('filterDateAfter').value;
@@ -97,12 +114,13 @@
 			var tr = table.getElementsByTagName("tr");
 			var tableData, i, j, userData, showRow, postIdString, postID;
 			var filterStyle = filterStyles[filterStyleIdx];
-			//Loop through every row, starting with 
+			//Loop through every row, skipping the headers
 			for (i = startRow; i < tr.length; i++) {
     			tableData = tr[i].getElementsByTagName("td");
     			showRow = true;
     			postIdString = tableData[2].children[0].innerHTML;
     			postID = parseInt(postIdString);
+    			//Filter post ID depending on the selected filter style
     			switch(filterStyle) {
     				case "str":
     					showRow = showRow && ((postIdString.toUpperCase().indexOf(filterPost) > -1));
@@ -114,14 +132,17 @@
     					showRow = showRow && !isNaN(postID) && postID >= filterPost;
     					break;
     			}
+    			//Filter other columns (except date)
 	  			for (j = 0; j < tableData.length - 2; j++) {
 	  				showRow = showRow && ((tableData[j].innerHTML.toUpperCase().indexOf(filterArray[j]) > -1));
 	  			}
+	  			//Filter date, depending on the presence and validity of the entered filter date
 	  			var postDate = new Date(tableData[tableData.length - 1].innerHTML.split(' ')[0]);
 	  			var doFilterDate = doFilterBefore || doFilterAfter;
 	  			var filterBeforeHit = !doFilterBefore || (doFilterBefore && postDate <= filterBefore)
 	  			var filterAfterHit = !doFilterAfter || (doFilterAfter && postDate >= filterAfter)
-	  			showRow = showRow && isDate(postDate) && (!doFilterDate || (doFilterDate && filterBeforeHit && filterAfterHit));
+	  			//Show/hide row
+	  			showRow = showRow && (!doFilterDate || (doFilterDate && filterBeforeHit && filterAfterHit));
 	  			tr[i].style.display = showRow ? "" : "none";
   			}
 		}
@@ -149,16 +170,22 @@
 				<th onclick="sortTable(2)">Post ID</th>
 				<th onclick="sortTable(3)">Date</th>
 			</tr>
-			<tr>
+			<tr id="searchRow" style="display: none;">
 				<th><input type="text" id="filterUser" onpaste="filter()" onkeyup="filter()" placeholder="Filter User"></th>
-				<th><input type="text" id="filterPCA" onpaste="filter()" onkeyup="filter()" placeholder="Filter PCA"></th>
+				<th>
+					<input list="filterPCA" id="filterPCAinput" onchange="filter()">
+					<datalist id="filterPCA">
+						<option value="test"></option>
+					</datalist>
+					<!-- <input type="text" id="filterPCA" onpaste="filter()" onkeyup="filter()" placeholder="Filter PCA"> !-->
+				</th>
 				<th>
 					<button onclick="changeIdFilterStyle(this)" title="Filter post ID by&#013;str: String&#013;<= and >=: Numeric">str</button>
 					<input type="text" id="filterPost" onpaste="filter()" onkeyup="filter()" placeholder="Filter Post ID" style="width: 60%">
 				</th>
 				<th>
-					<input type="date" id="filterDateBefore" onkeyup="filter()" placeholder="Posts on/before" style=" width:45%; margin-right: 1%">
-					<input type="date" id="filterDateAfter" onkeyup="filter()" placeholder="Posts on/after" style=" width: 45%; margin-left: 1%">
+					<input type="date" id="filterDateBefore" onkeyup="filter()" onchange="filter()" placeholder="Posts on/before" style=" width:45%; margin-right: 1%">
+					<input type="date" id="filterDateAfter" onkeyup="filter()" onchange="filter()" placeholder="Posts on/after" style=" width: 45%; margin-left: 1%">
 				</th>
 			</tr>
 			<?php
