@@ -173,7 +173,7 @@
 			<tr id="searchRow" style="display: none;">
 				<th><input type="text" id="filterUser" onpaste="filter()" onkeyup="filter()" placeholder="Filter User"></th>
 				<th>
-					<input list="filterPCA" id="filterPCAinput" onchange="filter()">
+					<input list="filterPCA" id="filterPCAinput" onchange="filter()" placeholder="Filter PCA">
 					<datalist id="filterPCA">
 						<option value="test"></option>
 					</datalist>
