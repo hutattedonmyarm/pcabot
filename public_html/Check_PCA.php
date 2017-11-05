@@ -6,6 +6,7 @@ function write_log($string, $level="INFO") {
 
 class User {
    public $user_name;
+   public $name;
    public $number_posts;
    public $following;
    public $follows_bot;
@@ -26,6 +27,7 @@ class User {
    	$this->user_name = '@'.$data['username'];
 		$this->number_posts = preg_replace('/\s+/', '', $data['counts']['posts']);
 		$this->follows_bot = $data['follows_you'];
+		$this->name = array_key_exists('name', $data) ? $data['name'] : '';
    }
 
    public static function get_users_from_api_reponse($api_reponse) {
@@ -70,9 +72,22 @@ class API {
 	public $access_token = '';
 	private static $api_endpoint = 'https://api.pnut.io/v0';
 	public $max_posttext_length = 256;
+	private static $settings_file_location = '../user_settings.json';
+	private static $settings = [];
+	private static $default_notification_text = 'Congratulations {user.username}, you are now a member of #{pca.name} {pca.emoji} ({pca.postcount} posts)! Next: {nextpca.emoji} at {nextpca.postcount} posts';
+	private static $notification_tokens = ['{user.username}', '{user.name}', '{pca.name}', '{pca.emoji}', '{pca.postcount}', '{nextpca.name}', '{nextpca.emoji}', '{nextpca.postcount}', '{posts_to_pca}'];
 
 	public function init() {
 		$this->max_posttext_length = $this->get_data('https://api.pnut.io/v0/sys/config')['data']['post']['max_length'];
+		if (!file_exists(self::$settings_file_location)) {
+			file_put_contents(self::$settings_file_location, json_encode([]));
+			write_log("No user settings file found. Creating empty one");
+		}
+		self::$settings = json_decode(file_get_contents(self::$settings_file_location), true);
+		if (condition) {
+			# code...
+		}
+		write_log("User settings fille loaded");
 	}
 
 	private function get_data($endpoint, $parameters=array(), $method='GET', $contenttype='application/x-www-form-urlencoded') {
@@ -86,9 +101,10 @@ class API {
            'content' => $postdata
         )
     	);
+    	$sapi_type = php_sapi_name();
     	if ((substr($sapi_type, 0, 3) == 'cli' || empty($_SERVER['REMOTE_ADDR'])) && $method=='POST') {
-    		echo "Running from shell instead of server. Debug mode assumed. Not submitting POST requests to server!\n";
-    		echo "Would have posted if run on a server: ".$postdata."\n";
+    		write_log("Running from shell instead of server. Debug mode assumed. Not submitting POST requests to server!", "DEBUG");
+    		write_log("Would have posted if run on a server: ".$postdata, "DEBUG");
     		return;
 		}
     	$context = stream_context_create($context_options);
@@ -105,6 +121,57 @@ class API {
     	}
 	}
 
+	public function get_messages($clubs) {
+		$num_unread_endpoint = self::$api_endpoint.'/users/me/channels/num_unread/pm';
+		$num_unread_pms = $this->get_data($num_unread_endpoint)['data'];
+		$messages = []; //Keys: username, values: message-array of messages by the user
+		write_log($num_unread_pms.' unread PMs');
+		if ($num_unread_pms > 0) {
+			$channels_endpoint = self::$api_endpoint.'/users/me/channels/subscribed?include_read=0,channel_types=io.pnut.core.pm';
+			$channels = $this->get_data($channels_endpoint);
+			foreach ($channels['data'] as $channel) {
+				write_log("Channel: ".$channel['id'], "DEBUG");
+				$messages_endpoint = self::$api_endpoint.'/channels/'.$channel['id'].'/messages?include_deleted=0&include_html=0&include_client=0';
+				$unread_messages = $this->get_data($messages_endpoint);
+				$msg = [];
+				$sender = "";
+				foreach ($unread_messages['data'] as $message) {
+					$message_text = $message['content']['text'];
+					$sender = $message['user']['username'];
+					$msg[] = $message['content']['text'];
+					write_log('Message from '.$sender.': '.$message_text, "DEBUG");
+				}
+				$messages[$sender] = $msg;
+			}
+			/*
+			 * Message command syntax:
+			 * "Help" or "?" => prints help
+			 * Things to include in help text:
+			 * - Available commands and syntax
+			 * - Variables
+			 * - 'username' includes the '@', pca names (current and next) don't incldue the #
+			 * "Get notification text" => replies with notification text
+			 * "Reset notification text" => resets to default
+			 * "Set notification text" followed by a space and then the text. Replies with sample text. Available tokens see class var: 
+			 */	
+		}
+		return $messages;
+	}
+
+	private function build_notification_text($user, $clubs, $current_pca, $next_pca) {
+		$notification_text = 'Congratulations {user.username}, you are now a member of #{pca.name} {pca.emoji} ({pca.postcount} posts)! Next: {nextpca.emoji} at {nextpca.postcount} posts';
+		$token_values = [$user->user_name, $user->name, $current_pca['pca'], $current_pca['emoji'], $current_pca['post_count'], $next_pca['pca'], $next_pca['emoji'], $next_pca['post_count'], ($next_pca['post_count'] - $user->number_posts)];
+		if (array_key_exists($user->user_name, self::$settings)) {
+			write_log($user->user_name." has custom settings: ".json_encode(self::$settings[$user->username]));
+			$notification_text = self::$settings[$user->username];
+		} else {
+			write_log($user->user_name." does not have custom settings!");
+		}
+		foreach (self::$notification_tokens as $index => $token) {
+			$notification_text = str_replace($token, $token_values[$index], $notification_text);
+		}
+		return $notification_text;
+	}
 	public function write_post($posttext, $reply_to=-1) {
 		$post_endpoint = self::$api_endpoint.'/posts';
 		$parameters = array('text' => mb_strimwidth($posttext, 0, $this->max_posttext_length, ""));
@@ -147,7 +214,8 @@ class API {
 		$last_notification = $user->last_club_notification;
 		$next_pca = $user->get_next_pca($clubs);
 		if ($current_pca != $last_notification) { #Havent't notified about the current club yet
-			#Stitch togetehr the post itself
+			#Stitch together the post itself
+			$this->build_notification_text($user, $clubs, $current_pca_dict, $next_pca);
 			$text_components = array();
 			$posttext = "Congratulations ".$user->user_name.", you are now a member of #".preg_replace('/\s+/', '', $current_pca).' '.$current_pca_dict['emoji'];
 			$text_components[] = ' ('.$current_pca_dict['post_count'].'+ posts)!';
@@ -173,7 +241,7 @@ class API {
 				$response = $this->get_data($ep, array());
 				$pca_offset -= count($response['data']);
 				$before_id = $response['meta']['min_id'];
-				echo "Received ".count($response['data'])." posts\n";
+				write_log("Received ".count($response['data'])." posts", "DEBUG");
 			} while ($pca_offset > 0);
 			$reply_to = $response['data'][count($response['data'])-1]['id'];
 			if (!isset($reply_to) || $reply_to == 0) {
@@ -228,7 +296,7 @@ if (file_exists('../access_token')) {
 $api = new API;
 $api->access_token = $access_token;
 $api->init();
-
+$messages = $api->get_messages($clubs);
 $followers = $api->get_bot_followers();
 #Check and notify. Also build notification dict
 foreach ($followers as $user) {
