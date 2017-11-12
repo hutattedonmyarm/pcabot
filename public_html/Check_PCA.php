@@ -76,23 +76,29 @@ class API {
 	private static $settings = [];
 	private static $default_notification_text = 'Congratulations {user.username}, you are now a member of #{pca.name} {pca.emoji} ({pca.postcount} posts)! Next: {nextpca.emoji} at {nextpca.postcount} posts';
 	private static $notification_tokens = ['{user.username}', '{user.name}', '{pca.name}', '{pca.emoji}', '{pca.postcount}', '{nextpca.name}', '{nextpca.emoji}', '{nextpca.postcount}', '{posts_to_pca}'];
+	public $me;
 
 	public function init() {
+		write_log("");
+		write_log("=================================");
+		write_log("");
 		$this->max_posttext_length = $this->get_data('https://api.pnut.io/v0/sys/config')['data']['post']['max_length'];
+		$this->me = User::get_users_from_api_reponse($this->get_data('https://api.pnut.io/v0/users/me'))[0];
+		write_log("Hi, my name is ".$this->me->user_name, "DEBUG");
 		if (!file_exists(self::$settings_file_location)) {
 			file_put_contents(self::$settings_file_location, json_encode([]));
 			write_log("No user settings file found. Creating empty one");
 		}
 		self::$settings = json_decode(file_get_contents(self::$settings_file_location), true);
-		if (condition) {
-			# code...
-		}
-		write_log("User settings fille loaded");
+		write_log("User settings file loaded");
 	}
 
-	private function get_data($endpoint, $parameters=array(), $method='GET', $contenttype='application/x-www-form-urlencoded') {
+	private function get_data($endpoint, $parameters=array(), $method='GET', $contenttype='application/x-www-form-urlencoded', $force=false) {
 		write_log("Making request to pnut API at ".$endpoint);
 		$postdata = http_build_query($parameters);
+		if ($contenttype == 'application/json') {
+			$postdata = json_encode($parameters);
+		}
 		$context_options = array (
         'http' => array (
            'method' => $method,
@@ -102,7 +108,7 @@ class API {
         )
     	);
     	$sapi_type = php_sapi_name();
-    	if ((substr($sapi_type, 0, 3) == 'cli' || empty($_SERVER['REMOTE_ADDR'])) && $method=='POST') {
+    	if (!$force && (substr($sapi_type, 0, 3) == 'cli' || empty($_SERVER['REMOTE_ADDR'])) && $method=='POST') {
     		write_log("Running from shell instead of server. Debug mode assumed. Not submitting POST requests to server!", "DEBUG");
     		write_log("Would have posted if run on a server: ".$postdata, "DEBUG");
     		return;
@@ -127,39 +133,66 @@ class API {
 		$messages = []; //Keys: username, values: message-array of messages by the user
 		write_log($num_unread_pms.' unread PMs');
 		if ($num_unread_pms > 0) {
-			$channels_endpoint = self::$api_endpoint.'/users/me/channels/subscribed?include_read=0,channel_types=io.pnut.core.pm';
+			$channels_endpoint = self::$api_endpoint.'/users/me/channels/subscribed?include_read=0&channel_types=io.pnut.core.pm';
 			$channels = $this->get_data($channels_endpoint);
 			foreach ($channels['data'] as $channel) {
 				write_log("Channel: ".$channel['id'], "DEBUG");
-				$messages_endpoint = self::$api_endpoint.'/channels/'.$channel['id'].'/messages?include_deleted=0&include_html=0&include_client=0';
+				$messages_endpoint = self::$api_endpoint.'/channels/'.$channel['id'].'/messages?include_deleted=0&include_html=0&include_client=0&include_marker=1';
 				$unread_messages = $this->get_data($messages_endpoint);
 				$msg = [];
 				$sender = "";
+				$last_read = $unread_messages['meta']['marker']['last_read_id'];
 				foreach ($unread_messages['data'] as $message) {
+					if ($message['id'] <= $last_read) {
+						//Stop when reaching already read messages
+						write_log("Message ".$message['id'].'is <= last read message '.$last_read.'. Skipping rest of the messages.',"DEBUG");
+						break;
+					}
+					$sender_tmp = $message['user']['username'];
+					if (substr($this->me->user_name, 1) == $sender_tmp) {
+						//Ignore messages sent by the bot
+						write_log("Ignoring message ".$message['id'].", because it was sent by myself", "DEBUG");
+						continue;
+					}
+					$sender = $sender_tmp;
 					$message_text = $message['content']['text'];
-					$sender = $message['user']['username'];
 					$msg[] = $message['content']['text'];
 					write_log('Message from '.$sender.': '.$message_text, "DEBUG");
 				}
-				$messages[$sender] = $msg;
+				if ($sender != "") {
+					$messages[$sender] = $msg;
+				}
 			}
-			/*
-			 * Message command syntax:
-			 * "Help" or "?" => prints help
-			 * Things to include in help text:
-			 * - Available commands and syntax
-			 * - Variables
-			 * - 'username' includes the '@', pca names (current and next) don't incldue the #
-			 * "Get notification text" => replies with notification text
-			 * "Reset notification text" => resets to default
-			 * "Set notification text" followed by a space and then the text. Replies with sample text. Available tokens see class var: 
-			 */	
 		}
 		return $messages;
 	}
 
+	public function send_message($user, $message) {
+		$send_message_endpoint = self::$api_endpoint.'/channels/pm/messages?update_marker=1';
+		$parameters = array('text' => $message, 'destinations' => array('@'.$user));
+		$this->get_data($send_message_endpoint, $parameters, 'POST', 'application/json', $user == 'hutattedonmyarm');
+	}
+
+	public function set_notification_text_template($user_id, $text) {
+		#echo json_encode(self::$settings);
+		self::$settings[$user_id] = $text;
+		$this->save_settings();
+	}
+
+	public function get_notification_text_template($user_id) {
+		$notification_text = API::$default_notification_text;
+		if (array_key_exists($user_id, self::$settings)) {
+			write_log($user_id." has custom settings: ".json_encode(self::$settings[$user_id]));
+			$notification_text = self::$settings[$user_id];
+		} else {
+			write_log($user_id." does not have custom settings!");
+		}
+		return $notification_text;
+	}
+	
 	private function build_notification_text($user, $clubs, $current_pca, $next_pca) {
-		$notification_text = 'Congratulations {user.username}, you are now a member of #{pca.name} {pca.emoji} ({pca.postcount} posts)! Next: {nextpca.emoji} at {nextpca.postcount} posts';
+		$notification_text = $this->get_notification_text_template($user->user_name);
+		
 		$token_values = [$user->user_name, $user->name, $current_pca['pca'], $current_pca['emoji'], $current_pca['post_count'], $next_pca['pca'], $next_pca['emoji'], $next_pca['post_count'], ($next_pca['post_count'] - $user->number_posts)];
 		if (array_key_exists($user->user_name, self::$settings)) {
 			write_log($user->user_name." has custom settings: ".json_encode(self::$settings[$user->username]));
@@ -172,6 +205,17 @@ class API {
 		}
 		return $notification_text;
 	}
+
+	public function reset_notification_text_for_user($user_id) {
+		if (array_key_exists($user_id, self::$settings)) {
+			unset(self::$settings[$user_id]);
+			$this->save_settings();
+		}
+	}
+
+	private function save_settings() {
+		file_put_contents(self::$settings_file_location, json_encode(self::$settings));
+	}
 	public function write_post($posttext, $reply_to=-1) {
 		$post_endpoint = self::$api_endpoint.'/posts';
 		$parameters = array('text' => mb_strimwidth($posttext, 0, $this->max_posttext_length, ""));
@@ -182,6 +226,9 @@ class API {
 	}
 	
 	public function get_user($user_id) {
+		if ($user_id[0] != '@') {
+			$user_id = '@'.$user_id;
+		}
 		$user_endpoint = self::$api_endpoint.'/users/'.$user_id;
 		return new User($this->get_data($user_endpoint));
 	}
@@ -297,6 +344,54 @@ $api = new API;
 $api->access_token = $access_token;
 $api->init();
 $messages = $api->get_messages($clubs);
+/*
+ * Message command syntax:
+ * "Help" or "?" => prints help
+ * "Get notification text" => replies with notification text
+ * "Reset notification text" => resets to default
+ * "Set notification text" followed by a space and then the text. Replies with sample text. Available tokens see class var 
+ */	
+foreach ($messages as $sender => $message) {
+	$sender_obj = $api->get_user($sender);
+	foreach ($message as $msg) {
+		if (mb_strtolower($msg) == '?' || mb_strtolower($msg) == 'help') {
+			$helptext = "Welcome to ".$api->me->user_name."!\n";
+			$helptext .= "The following commands are available: \n";
+			$helptext .= "- 'Get notification text', which prints the current notification text for you\n";
+			$helptext .= "- 'Set notification text', followed by a space and a custom notification text\n";
+			$helptext .= "- 'Reset notification text', resets the notification text to the default\n";
+			$helptext .= "\n";
+			$helptext .= "		Available tokens for the custom notification text\n";
+			$helptext .= "		- '{user.username}', your username (including the @)\n";
+			$helptext .= "		- '{user.name}', your real name\n";
+			$helptext .= "		- '{pca.name}', the name of the PCA you achieved, excluding the #\n";
+			$helptext .= "		- '{pca.emoji}', the emoji of the PCA you achieved\n";
+			$helptext .= "		- '{pca.postcount}', the number of posts you need to achieve the PCA\n";
+			$helptext .= "		- '{nextpca.name}', the name of the next PCA\n";
+			$helptext .= "		- '{nextpca.emoji}', the emoji of the next PCA\n";
+			$helptext .= " 	- '{nextpca.postcount}', the total number of posts needed for the next PCA\n";
+			$helptext .= "		- '{posts_to_pca}', the number of posts missing to the next PCA\n";
+			$api->send_message($sender, $helptext);
+			//Print help text
+		} elseif (substr(mb_strtolower($msg), 0, 21) === 'get notification text') {
+			//Print current notification text for user
+			//TODO: build example notification text. Create user object and do 'get_highest_pca($clubs)' and 'get_next_pca($clubs)'
+			$api->send_message($sender, "You current notification text is: \n".$api->get_notification_text_template($sender));
+		} elseif (substr(mb_strtolower($msg), 0, 23) === 'reset notification text') {
+			//reset notification text for user to default
+			$api->reset_notification_text_for_user($sender);
+			$api->send_message($sender, "Your notification text has been reset back to the default: \n".$api->get_notification_text_template($sender));
+		} elseif (substr(mb_strtolower($msg), 0, 21) === 'set notification text') {
+			$notification_text = substr($msg, 22);
+			$api->set_notification_text_template($sender, $notification_text);
+			$api->send_message($sender, "Your notification text has been set to:\n".$api->get_notification_text_template($sender));
+		} else {
+			write_log("Unknown command: '".$msg."' from ".$sender,"DEBUG");
+			$api->send_message($sender, "I'm sorry, I don't recognize that. Try PMing me 'help'");
+		}
+		
+	}
+}
 $followers = $api->get_bot_followers();
 #Check and notify. Also build notification dict
 foreach ($followers as $user) {
