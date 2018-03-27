@@ -1,0 +1,18 @@
+body {
+    padding: 10px;
+    font-family: "arial";
+    margin: 0 auto;
+}
+.container {
+    display: flex;
+    justify-content: center;
+    flex-direction: column;
+    border: 1px solid black;
+    text-align: center;
+    margin: 0 auto;
+    width: 400px;
+}
+img {
+    max-width: 40%;
+}
+
