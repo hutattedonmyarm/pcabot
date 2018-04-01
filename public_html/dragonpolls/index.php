@@ -161,6 +161,19 @@ if (isset($_GET['poll'])) {
 			$respondents_data = $respondents_request_reply->data;
 		}	
 	}
+	$status_text = '';
+	$status = '';
+	$optn_status = '';
+	if (isset($poll->closed_at) && strtotime($poll->closed_at) <= time()) {
+		$status_text = 'This poll has been closed since '.$poll->closed_at;
+		$status = ' title="'.$status_text.'" style="display:none;"';
+		$optn_status = 'disabled';
+	}
+	if ($already_responded === true) {
+		$status_text = 'You already responded to this poll';
+		$status = ' title="'.$status_text.'" style="display:none;"';
+		$optn_status = 'disabled';
+	}
 	foreach ($poll->options as $option) {
 		echo '<div class="option">';
 		$checked = '';
@@ -168,7 +181,7 @@ if (isset($_GET['poll'])) {
 			$already_responded = true;
 			$checked = 'checked';
 		}
-		echo '	<input type="radio" name="answer" value="'.$option->position.'" '.$checked.'>';
+		echo '	<input type="radio" name="answer" value="'.$option->position.'" '.$checked.' '.$optn_status.'>';
 		echo '	<div class="option-wrapper">';
 		echo '		<div class="option-text">'.$option->text;
 		if (isset($option->respondents)) {
@@ -195,16 +208,7 @@ if (isset($_GET['poll'])) {
 		echo '	</div>';
 		echo '</div>';
 	}
-	$status_text = '';
-	$status = '';
-	if (isset($poll->closed_at) && strtotime($poll->closed_at) <= time()) {
-		$status_text = 'This poll has been closed since '.$poll->closed_at;
-		$status = ' title="'.$status_text.'" disabled';
-	}
-	if ($already_responded === true) {
-		$status_text = 'You already responded to this poll';
-		$status = ' title="'.$status_text.'" disabled';
-	}
+	
 	echo '<input type="hidden" value="'.$poll_id.'" name="poll">';
 	echo '<div class="submit-wrapper"><input type="submit" value="Submit" class="link-button" name="Submit"'.$status.'><div class="submit-warning" id="submit-warning">'.$status_text.'</div></div>';
 	echo '</form></div>';
