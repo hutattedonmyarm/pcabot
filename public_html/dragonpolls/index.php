@@ -169,17 +169,17 @@ if (isset($_GET['poll'])) {
 		$status = ' title="'.$status_text.'" style="display:none;"';
 		$optn_status = 'disabled';
 	}
-	if ($already_responded === true) {
-		$status_text = 'You already responded to this poll';
-		$status = ' title="'.$status_text.'" style="display:none;"';
-		$optn_status = 'disabled';
-	}
 	foreach ($poll->options as $option) {
 		echo '<div class="option">';
 		$checked = '';
 		if (isset($option->is_your_response) && $option->is_your_response == true) {
 			$already_responded = true;
 			$checked = 'checked';
+		}
+		if ($already_responded === true) {
+			$status_text = 'You already responded to this poll';
+			$status = ' title="'.$status_text.'" style="display:none;"';
+			$optn_status = 'disabled';
 		}
 		echo '	<input type="radio" name="answer" value="'.$option->position.'" '.$checked.' '.$optn_status.'>';
 		echo '	<div class="option-wrapper">';
