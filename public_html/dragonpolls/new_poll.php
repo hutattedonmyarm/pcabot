@@ -115,14 +115,14 @@ if (isset($_POST['submit'])) {
 	$success = isset($new_poll->meta, $new_poll->meta->code) && $new_poll->meta->code == 201;
 	#$success = true;
 	if ($success) {
-		echo 'Poll creation succesful!.<a href="index.php?poll='.$new_poll->data->id.'">Go to poll</a><br>';
+		echo 'Poll creation succesful!.<a href="index.php?poll='.$new_poll->data->id.'" class="link-button">Go to poll</a><br>';
 		echo '<form method="POST">';
 		echo '<textarea rows="4" cols="50" name="postText" maxlength="256">I created a new poll:
 '.$question.'
 https://wedro.online/dragonpolls/index.php?poll='.$new_poll->data->id.'
 		</textarea><br>
 		<input type="hidden" name="pollID" value="'.$new_poll->data->id.'">
-		<input type="submit" name="postSubmit" value="Post to pnut">
+		<input type="submit" name="postSubmit" value="Post to pnut" class="link-button">
 		</form>';
 		#echo '<script>window.location.replace("index.php?poll='.$new_poll->data->id.'");</script>';
 		die();
@@ -138,7 +138,7 @@ if (isset($_POST['postSubmit'])) {
 	$poll_post = get_data($endpoint, $parameters, 'POST');
 	$success = isset($poll_post->meta, $poll_post->meta->code) && $poll_post->meta->code == 201;
 	if ($success) {
-		echo 'Poll creation succesful!.<a href="index.php?poll='.$_POST['pollID'].'">Go to poll</a><br>';
+		echo 'Poll creation succesful!.<a href="index.php?poll='.$_POST['pollID'].'" class="link-button">Go to poll</a><br>';
 	} else {
 		die("Error creating poll: ".json_encode($poll_post));
 	}
