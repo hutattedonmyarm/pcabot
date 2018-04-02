@@ -122,6 +122,7 @@ if (isset($_POST['submit'])) {
 https://wedro.online/dragonpolls/index.php?poll='.$new_poll->data->id.'
 		</textarea><br>
 		<input type="hidden" name="pollID" value="'.$new_poll->data->id.'">
+		<input type="hidden" name="pollToken" value="'.$new_poll->data->poll_token.'">
 		<input type="submit" name="postSubmit" value="Post to pnut" class="link-button">
 		</form>';
 		#echo '<script>window.location.replace("index.php?poll='.$new_poll->data->id.'");</script>';
@@ -132,9 +133,12 @@ https://wedro.online/dragonpolls/index.php?poll='.$new_poll->data->id.'
 }
 
 if (isset($_POST['postSubmit'])) {
+	echo '<script>console.log("Posting poll");</script>';
 	$text = $_POST['postText'];
 	$endpoint = 'https://api.pnut.io/v0/posts';
-	$parameters = array('text' => $text);
+	$raw_value = array('+io.pnut.core.poll' => array('poll_id' => $_POST['pollID'], 'poll_token' => $_POST['pollToken']));
+	$raw = array(array('type' => 'io.pnut.core.poll-notice', 'value' => $raw_value));
+	$parameters = array('text' => $text, 'raw' => $raw);
 	$poll_post = get_data($endpoint, $parameters, 'POST');
 	$success = isset($poll_post->meta, $poll_post->meta->code) && $poll_post->meta->code == 201;
 	if ($success) {
