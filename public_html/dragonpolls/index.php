@@ -55,11 +55,17 @@ if ($auth_token == null) { //Not yet authorized
 		$cookie_lifetime = time()+(60*60*24*30);
 		setcookie('polls_auth_token', $resp['access_token'], $cookie_lifetime);
 		#header($redirect_uri);
-		echo 'Redirecting to <a href="'.$redirect_uri.'">'.$redirect_uri.'</a><script>window.location.replace("'.$redirect_uri.'");</script>';
+		redirect($redirect_uri);
 	} else { //Ask user to authorize
 		echo '<a href="https://pnut.io/oauth/authenticate?client_id='.$client_id.'&redirect_uri='.urlencode($redirect_uri).'&scope=polls,write_post&response_type=code">Authorize with pnut.io</a>';
 		die();
 	}
+}
+
+function redirect($url) {
+	header("Location: ".$url);
+	echo '<meta http-equiv="refresh" content="0;url='.$url.'">';
+	echo '<script>window.location.replace("'.$url.'");</script>Redirecting to <a href="'.$url.'">'.$url.'</a>';
 }
 
 function get_http_response_code($url) {
@@ -192,6 +198,13 @@ if (isset($_GET['poll'])) {
 		$status = ' title="'.$status_text.'" style="display:none;"';
 		$optn_status = 'disabled';
 	}
+	if(isset($poll->you_responded) && $poll->you_responded == true) {
+		$already_responded = true;
+		$status_text = 'You already responded to this poll';
+		$status = ' title="'.$status_text.'" style="display:none;"';
+		$optn_status = 'disabled';
+	}
+
 	foreach ($poll->options as $option) {
 		echo '<div class="option">';
 		$checked = '';

@@ -148,6 +148,11 @@ if (isset($_POST['postSubmit'])) {
 	}
 }
 
+function redirect($url) {
+	header("Location: ".$url);
+	echo '<meta http-equiv="refresh" content="0;url='.$url.'">';
+	echo '<script>window.location.replace("'.$url.'");</script>Redirecting to <a href="'.$url.'">'.$url.'</a>';
+}
 
 ?>
 <script>
