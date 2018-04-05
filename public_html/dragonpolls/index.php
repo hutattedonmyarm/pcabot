@@ -25,8 +25,8 @@ function get_auth_token() {
 $auth_token = get_auth_token();
 if ($auth_token == null) { //Not yet authorized
 	$client_id = 'kAA6Qzi6ErYcqg12ljZCGie_9u3GVXwv';
-	#$redirect_uri = 'https://wedro.online/dragonpolls/index.php';
-	$redirect_uri = 'http://localhost/dragonpolls/index.php';
+	$redirect_uri = 'https://wedro.online/dragonpolls/index.php';
+	#$redirect_uri = 'http://localhost/dragonpolls/index.php';
 	if (isset($_GET['poll'])) {
 		$redirect_uri .= '?poll='.$_GET['poll'];
 	}
