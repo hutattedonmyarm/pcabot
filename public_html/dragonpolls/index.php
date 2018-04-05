@@ -17,6 +17,7 @@ function get_auth_token() {
 		$token = $_SESSION['polls_auth_token'];
 	} else if (isset($_COOKIE['polls_auth_token']) && $_COOKIE['polls_auth_token'] != 'expired') {
 		$token = $_COOKIE['polls_auth_token'];
+		$_SESSION['polls_auth_token'] = $_COOKIE['polls_auth_token'];
 	}
 	return $token;
 }
@@ -75,7 +76,13 @@ function get_data($endpoint, $parameters=array(), $method='GET', $contenttype='a
 		curl_setopt($ch, CURLOPT_POSTFIELDS, $postdata);
 		curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PUT');
 		$headers = array();
-		$headers[] = 'Authorization: Bearer '.$_SESSION['polls_auth_token'];
+		$token = null;
+		if (isset($_SESSION['polls_auth_token'])) {
+			$token = $_SESSION['polls_auth_token'];
+		} else if (isset($_COOKIE['polls_auth_token']) && $_COOKIE['polls_auth_token'] != 'expired') {
+			$token = $_COOKIE['polls_auth_token'];
+		}
+		$headers[] = 'Authorization: Bearer '.$token;
 		curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
 		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 		curl_setopt($ch, CURLINFO_HEADER_OUT, true);
@@ -97,11 +104,17 @@ function get_data($endpoint, $parameters=array(), $method='GET', $contenttype='a
 	       'content' => $postdata
 	    )
 		);
+		$token = null;
+		if (isset($_SESSION['polls_auth_token'])) {
+			$token = $_SESSION['polls_auth_token'];
+		} else if (isset($_COOKIE['polls_auth_token']) && $_COOKIE['polls_auth_token'] != 'expired') {
+			$token = $_COOKIE['polls_auth_token'];
+		}
 		if ($method == "PUT") {
-			$context_options['http']['header'] = 'Authorization: Bearer '.$_SESSION['polls_auth_token'];
+			$context_options['http']['header'] = 'Authorization: Bearer '.$token;
 		} else {
 			$context_options['http']['header'] = "Content-type: ".$contenttype."\r\n"
-	            		.'Authorization: Bearer '.$_SESSION['polls_auth_token'];
+	            		.'Authorization: Bearer '.$token;
 		}
 		$sapi_type = php_sapi_name();
 		if (!$force && (substr($sapi_type, 0, 3) == 'cli' || empty($_SERVER['REMOTE_ADDR'])) && $method=='POST') {
