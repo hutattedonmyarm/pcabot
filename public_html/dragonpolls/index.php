@@ -25,8 +25,8 @@ function get_auth_token() {
 $auth_token = get_auth_token();
 if ($auth_token == null) { //Not yet authorized
 	$client_id = 'kAA6Qzi6ErYcqg12ljZCGie_9u3GVXwv';
-	$redirect_uri = 'https://wedro.online/dragonpolls/index.php';
-	#$redirect_uri = 'http://localhost/dragonpolls/index.php';
+	#$redirect_uri = 'https://wedro.online/dragonpolls/index.php';
+	$redirect_uri = 'http://localhost/dragonpolls/index.php';
 	if (isset($_GET['poll'])) {
 		$redirect_uri .= '?poll='.$_GET['poll'];
 	}
@@ -204,6 +204,10 @@ if (isset($_GET['poll'])) {
 		$status = ' title="'.$status_text.'" style="display:none;"';
 		$optn_status = 'disabled';
 	}
+	$public_state = ' anonymous vote';
+	if (!isset($poll->is_anonymous) || $poll->is_anonymous == false) {
+		$public_state = ' public vote';
+	}
 
 	foreach ($poll->options as $option) {
 		echo '<div class="option">';
@@ -246,7 +250,7 @@ if (isset($_GET['poll'])) {
 	}
 	
 	echo '<input type="hidden" value="'.$poll_id.'" name="poll">';
-	echo '<div class="submit-wrapper"><input type="submit" value="Submit" class="link-button" name="Submit"'.$status.'><div class="submit-warning" id="submit-warning">'.$status_text.'</div></div>';
+	echo '<div class="submit-wrapper"><input type="submit" value="Submit'.$public_state.'" class="link-button" name="Submit"'.$status.'><div class="submit-warning" id="submit-warning">'.$status_text.'</div></div>';
 	echo '</form></div>';
 	if (isset($_GET['Submit']) && isset($_GET['answer'])) {
 		$vote = json_decode(explode("\r\n\r\n",get_data('https://api.pnut.io/v0/polls/'.$poll_id.'/response/'.$_GET['answer'], array(), "PUT"),2)[1]);
