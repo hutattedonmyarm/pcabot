@@ -17,7 +17,7 @@ function get_http_response_code($url) {
 }
 
 function get_data($endpoint, $parameters=array(), $method='GET', $contenttype='application/x-www-form-urlencoded', $force=false) {
-	//Needs cleanup!
+	//Needs cleanup!d
 	if ($method == "PUT") {
 		$ch = curl_init($endpoint);
 		curl_setopt($ch, CURLOPT_POST, true);
@@ -158,6 +158,7 @@ function redirect($url) {
 <script>
 	function validatePoll() {
 		let maxlength = 256;
+		let optionMaxLength = 64;
 		let minAnswers = 2;
 		let maxAnswers = 10;
 		let minDuration = 1;
@@ -166,7 +167,7 @@ function redirect($url) {
 		let numAnswers = 0;
 		let options = document.getElementById('options').getElementsByTagName('input');
 		for (var i = 0; i < options.length; i++) {
-			isValid = isValid && options[i].value != undefined && options[i].value.length <= maxlength;
+			isValid = isValid && options[i].value != undefined && options[i].value.length <= optionMaxLength;
 			if (options[i].value.length > 0) {
 				numAnswers++;
 			}
@@ -198,16 +199,16 @@ function redirect($url) {
 		<tr>
 			<td valign="top">Options:</td>
 			<td id="options">
-				<input type="text" name="option[]" maxlength="256" size="80" required><br>
-				<input type="text" name="option[]" maxlength="256" size="80" required><br>
-				<input type="text" name="option[]" maxlength="256" size="80"><br>
-				<input type="text" name="option[]" maxlength="256" size="80"><br>
-				<input type="text" name="option[]" maxlength="256" size="80"><br>
-				<input type="text" name="option[]" maxlength="256" size="80"><br>
-				<input type="text" name="option[]" maxlength="256" size="80"><br>
-				<input type="text" name="option[]" maxlength="256" size="80"><br>
-				<input type="text" name="option[]" maxlength="256" size="80"><br>
-				<input type="text" name="option[]" maxlength="256" size="80"><br>
+				<input type="text" name="option[]" maxlength="64" size="64" required><br>
+				<input type="text" name="option[]" maxlength="64" size="64" required><br>
+				<input type="text" name="option[]" maxlength="64" size="64"><br>
+				<input type="text" name="option[]" maxlength="64" size="64"><br>
+				<input type="text" name="option[]" maxlength="64" size="64"><br>
+				<input type="text" name="option[]" maxlength="64" size="64"><br>
+				<input type="text" name="option[]" maxlength="64" size="64"><br>
+				<input type="text" name="option[]" maxlength="64" size="64"><br>
+				<input type="text" name="option[]" maxlength="64" size="64"><br>
+				<input type="text" name="option[]" maxlength="64" size="64"><br>
 			</td>
 		</tr>
 		<tr>
