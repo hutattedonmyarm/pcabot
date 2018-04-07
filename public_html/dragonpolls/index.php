@@ -194,7 +194,9 @@ if (isset($_GET['poll'])) {
 	$status = '';
 	$optn_status = '';
 	if (isset($poll->closed_at) && strtotime($poll->closed_at) <= time()) {
-		$status_text = 'This poll has been closed since '.$poll->closed_at;
+		$closed_at = strtotime($poll->closed_at);
+		$cl_string = date("G:i:s T, D M j Y", $closed_at); 
+		$status_text = 'This poll has been closed since '.$cl_string;
 		$status = ' title="'.$status_text.'" style="display:none;"';
 		$optn_status = 'disabled';
 	}
