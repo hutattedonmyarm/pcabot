@@ -135,6 +135,18 @@ function get_data($endpoint, $parameters=array(), $method='GET', $contenttype='a
 			if ($code == 404) {
 				die("Poll not found");
 			}
+			if ($code == 401) {
+				$die_str = '';
+				if(isset($_GET['poll_token'])) {
+					$die_str = 'The poll token you entered is invalid.';
+				} else if (isset($_GET['post_id'])) {
+					$die_str = 'Post '.$_GET['post_id'].' doesn\'t contain a valid poll token.';
+				} else {
+					$die_str = 'This poll is private, you need a token to on it.<br />If you found the poll in a public post you can also enter the ID of the post.';
+				}
+				$die_str .= '<br /><input type="text" id="poll_access"><input type="radio" name="kind" value="poll_token" checked>Token<input type="radio" name="kind" value="post_id">Post ID<button class="link-button" onclick="let kind=document.querySelector(\'input[name=kind]:checked\');let val=document.getElementById(\'poll_access\').value;location.search+=\'&\'+kind.value+\'=\'+val;">Access poll</button>';
+				die($die_str);
+			}
 			die("Error ".$code);
 		}
 		$resp_dict = json_decode($response);
@@ -160,7 +172,21 @@ echo '<div class="block-wrapper"><div class="inline-wrapper"><a href="new_poll.p
 
 if (isset($_GET['poll'])) {
 	$poll_id = $_GET['poll'];
-	$poll = get_data('https://api.pnut.io/v0/polls/'.$poll_id,array('include_raw' => 1))->data;
+	$poll_token = '';
+	if (isset($_GET['poll_token'])) {
+		$poll_token = '?poll_token='.$_GET['poll_token'];
+	} else if(isset($_GET['post_id'])) {
+		$post = get_data('https://api.pnut.io/v0/posts/'.$_GET['post_id'].'?include_raw=1')->data;
+		if (isset($post->raw)) {
+			foreach ($post->raw as $raw) {
+				if ($raw->type == 'io.pnut.core.poll-notice') {
+					$poll_token = '?poll_token='.$raw->value->poll_token;
+					break;
+				}
+			}
+		}
+	}
+	$poll = get_data('https://api.pnut.io/v0/polls/'.$poll_id.$poll_token,array('include_raw' => 1))->data;
 	$token = $poll->poll_token;
 	$already_responded = false;
 	echo '<div><div class="box">'.$poll->prompt.'</div></div>';
@@ -262,7 +288,7 @@ if (isset($_GET['poll'])) {
 			}
 			die("Error: ".json_encode($vote->meta));
 		}
-		echo '<script>window.location.replace("index.php?poll='.$poll_id.'");</script>';
+		echo '<script>location.replace("index.php?poll='.$poll_id.'");</script>';
 	}
 }
 ?>
