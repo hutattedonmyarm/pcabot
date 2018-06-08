@@ -1,0 +1,123 @@
+:root {
+  --main-bg-color: #3f3f3f;
+  --primary-highlight-color: rgb(235, 160, 23);
+  --secondary-highlight-color: white;
+}
+body {
+    padding: 10px;
+    font-family: "arial";
+    margin: 0 auto;
+    background-color: var(--main-bg-color);
+    color: var(--primary-highlight-color);
+}
+
+.box {
+    border: 1px solid var(--secondary-highlight-color);
+    padding: 5px;
+    margin: 5px;
+    margin-top: 15px;
+    background-color: inherit;
+    color: inherit;
+    display: inline-block;
+}
+
+form.box {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.secondary {
+    opacity: 0.7;
+    margin-top: -5px;
+    border-top: none;
+    font-size: 0.8em;
+    display: inline-block;
+    width: auto;
+}
+
+div.option {
+     /*height: 30px;*/
+    min-height: 30px;
+}
+
+.option-wrapper {
+    display: inline-block;
+}
+
+.inline-wrapper {
+    display: inline-block;
+}
+
+div.block-wrapper {
+    padding-bottom: 10px;
+}
+
+.submit-wrapper {
+    /*overflow: hidden;*/
+}
+
+.submit-warning {
+    display: inline-block;
+}
+
+
+input[name=answer] {
+    vertical-align: top;
+}
+
+input[type=text], input[type=number] {
+    border: 1px solid var(--secondary-highlight-color);
+    font-family: inherit;
+    background-color: inherit;
+    color: inherit;
+    margin: 5px;
+    padding: 5px;
+}
+
+
+input[type=number]::-webkit-inner-spin-button, 
+input[type=number]::-webkit-outer-spin-button { 
+  opacity: 0;
+}
+
+input[type=number]:hover::-webkit-inner-spin-button, 
+input[type=number]:hover::-webkit-outer-spin-button,
+input[type=number]:focus::-webkit-outer-spin-button { 
+  opacity: 1;
+}
+
+input[type=number] { 
+  -moz-appearance: textfield;
+}
+
+input[type=number]:hover,
+input[type=number]:focus  { 
+  -moz-appearance: initial;
+}
+
+
+.link-button {
+    border: 1px solid var(--secondary-highlight-color);
+    padding: 5px;
+    margin: 5px;
+    background-color: var(--primary-highlight-color);
+    color: var(--secondary-highlight-color);
+    text-decoration: none;
+    cursor: pointer;
+}
+.link-button:hover:not(:disabled) {
+    border-color: var(--primary-highlight-color);
+    background-color: var(--secondary-highlight-color);
+    color: var(--main-bg-color);
+}
+.link-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background-color: var(--main-bg-color);
+}
+
+img.micro-avatar {
+    width:100%;
+    max-width:20px;
+}
