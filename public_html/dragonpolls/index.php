@@ -25,8 +25,8 @@ function get_auth_token() {
 $auth_token = get_auth_token();
 if ($auth_token == null) { //Not yet authorized
 	$client_id = 'kAA6Qzi6ErYcqg12ljZCGie_9u3GVXwv';
-	$redirect_uri = 'https://wedro.online/dragonpolls/index.php';
-	#$redirect_uri = 'http://localhost/dragonpolls/index.php';
+	#$redirect_uri = 'https://wedro.online/dragonpolls/index.php';
+	$redirect_uri = 'http://localhost/dragonpolls/index.php';
 	if (isset($_GET['poll'])) {
 		$redirect_uri .= '?poll='.$_GET['poll'];
 	}
@@ -57,7 +57,7 @@ if ($auth_token == null) { //Not yet authorized
 		#header($redirect_uri);
 		redirect($redirect_uri);
 	} else { //Ask user to authorize
-		echo '<a href="https://pnut.io/oauth/authenticate?client_id='.$client_id.'&redirect_uri='.urlencode($redirect_uri).'&scope=polls,write_post&response_type=code">Authorize with pnut.io</a>';
+		echo '<a href="https://pnut.io/oauth/authenticate?clie^nt_id='.$client_id.'&redirect_uri='.urlencode($redirect_uri).'&scope=polls,write_post&response_type=code">Authorize with pnut.io</a>';
 		die();
 	}
 }
@@ -168,6 +168,30 @@ function get_user_by_id($id, $users) {
 	}
 }
 
+function readableDateDiff($date) {
+	$closed_at = new DateTime();
+	$closed_at->setTimestamp(strtotime($date));
+	$now = new DateTime();
+	$diff = date_diff($closed_at, $now);
+	$str = "";
+	if ($diff->y != 0) {
+		$str .= $diff->y.' years, ';
+	}
+	if ($diff->m != 0) {
+		$str .= $diff->m.' months, ';
+	}
+	if ($diff->d != 0) {
+		$str .= $diff->d.' days, ';
+	}
+	if ($diff->h != 0) {
+		$str .= $diff->h.' hours, ';
+	}
+	$str .= $diff->i.' minutes, ';
+	$str .= $diff->s.' seconds';	
+	return $str;
+}
+
+
 echo '<div class="block-wrapper"><div class="inline-wrapper"><a href="new_poll.php" class="link-button">Create new poll</a></div></div>';
 
 if (isset($_GET['poll'])) {
@@ -189,10 +213,22 @@ if (isset($_GET['poll'])) {
 	$poll = get_data('https://api.pnut.io/v0/polls/'.$poll_id.$poll_token,array('include_raw' => 1))->data;
 	$token = $poll->poll_token;
 	$already_responded = false;
-	echo '<div><div class="box">'.$poll->prompt.'</div></div>';
+	echo '<div style="display: inline-block;"><div class="box" style="display: inline-block;width: 100%">'.$poll->prompt.'</div><br>';
 	if (isset($poll->user)) {
 		echo '<div class="box secondary">By @'.$poll->user->username.'</div>';
 	}
+	$cl_string = "";
+	$cl_post = '';
+	$closed_at = strtotime($poll->closed_at);
+	if (strtotime($poll->closed_at) <= time()) {
+		$cl_string = "Closed at ";
+		$cl_post = ' ago';
+	} else {
+		$cl_string = "Closing at ";
+		$cl_post = ' left';
+	}
+	$cl_string .= date("G:i:s T, D M j Y", $closed_at).' ('.readableDateDiff($poll->closed_at).$cl_post.')';
+	echo '<div class="box secondary">'.$cl_string.'</div></div>';
 	echo '<div><form action="?poll='.$poll_id.'" class="box">';
 	$respondents = array();
 	$respondents_data;
@@ -224,11 +260,12 @@ if (isset($_GET['poll'])) {
 		$cl_string = date("G:i:s T, D M j Y", $closed_at); 
 		$status_text = 'This poll has been closed since '.$cl_string;
 		$status = ' title="'.$status_text.'" style="display:none;"';
+		echo '<script>console.log("ended");</script>';
 		$optn_status = 'disabled';
 	}
 	if(isset($poll->you_responded) && $poll->you_responded == true) {
 		$already_responded = true;
-		$status_text = 'You already responded to this poll';
+		$status_text = 'You already responded to this poll.<br />';
 		$status = ' title="'.$status_text.'" style="display:none;"';
 		$optn_status = 'disabled';
 	}
@@ -244,11 +281,13 @@ if (isset($_GET['poll'])) {
 			$already_responded = true;
 			$checked = 'checked';
 		}
+		/*
 		if ($already_responded === true) {
 			$status_text = 'You already responded to this poll';
 			$status = ' title="'.$status_text.'" style="display:none;"';
 			$optn_status = 'disabled';
 		}
+		*/
 		echo '	<input type="radio" name="answer" value="'.$option->position.'" '.$checked.' '.$optn_status.'>';
 		echo '	<div class="option-wrapper">';
 		echo '		<div class="option-text">'.$option->text;

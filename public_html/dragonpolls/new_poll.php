@@ -17,7 +17,7 @@ function get_http_response_code($url) {
 }
 
 function get_data($endpoint, $parameters=array(), $method='GET', $contenttype='application/x-www-form-urlencoded', $force=false) {
-	//Needs cleanup!d
+	//Needs cleanup!
 	if ($method == "PUT") {
 		$ch = curl_init($endpoint);
 		curl_setopt($ch, CURLOPT_POST, true);

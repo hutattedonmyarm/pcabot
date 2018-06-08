@@ -32,7 +32,7 @@
  				xmlhttp.open("GET","pca.json");
  				xmlhttp.send();
 			}
-			sortTable(3);
+			sortTable(3, "desc");
 		}
 
 		function isDate(d) {
@@ -50,11 +50,11 @@
 			}
 		}
 
-		function sortTable(n) {
-			var rows, switching, i, x, y, shouldSwitch, dir, switchcount = 0;
+		function sortTable(n, dir) {
+			var rows, switching, i, x, y, shouldSwitch, switchcount = 0;
 			var table = document.getElementById(tableID);
 			switching = true;
-			dir = "asc";
+			dir = dir || "asc";
 			while (switching) {
 				switching = false;
 				rows = table.getElementsByTagName("tr");
