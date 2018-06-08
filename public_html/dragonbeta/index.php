@@ -191,7 +191,9 @@ function readableDateDiff($date) {
 	return $str;
 }
 
-
+#print_r(get_data('https://api.pnut.io/v0/users/me'));
+$me = get_data('https://api.pnut.io/v0/users/me')->data;
+echo 'Welcome, @'.$me->username;
 echo '<div class="block-wrapper"><div class="inline-wrapper"><a href="new_poll.php" class="link-button">Create new poll</a></div></div>';
 
 if (isset($_GET['poll'])) {
