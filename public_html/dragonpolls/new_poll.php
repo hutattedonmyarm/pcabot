@@ -78,7 +78,6 @@ function get_data($endpoint, $parameters=array(), $method='GET', $contenttype='a
 		}
 	}
 }
-
 $auth_token = null;
 if (isset($_SESSION['polls_auth_token'])) {
 	$auth_token = $_SESSION['polls_auth_token'];
@@ -97,7 +96,6 @@ if (isset($_POST['submit'])) {
 	}
 	$anonymous = isset($_POST['anonymous']);
 	$public = isset($_POST['public']);
-	
 	$contenttype = 'application/json';
 	$method = 'POST';
 	$endpoint = 'https://api.pnut.io/v0/polls';
@@ -110,7 +108,15 @@ if (isset($_POST['submit'])) {
 			$options[] = $o;
 		}
 	}
-	$parameters = array('prompt' => $question, 'type' => $type, 'options' => $options, 'duration' => $duration, 'is_public' => $public, 'is_anonymous' => $anonymous);
+	$max_votes = $_POST['maxVotes'];
+	if ($max_votes < 1) {
+		$max_votes = 1;
+	}
+	$max_votes = $_POST['maxVotes'];
+	if ($max_votes > count($options)) {
+		$max_votes = count($options)-1;
+	}
+	$parameters = array('prompt' => $question, 'type' => $type, 'options' => $options, 'duration' => $duration, 'is_public' => $public, 'is_anonymous' => $anonymous, 'max_options' => $max_votes);
 	$new_poll = get_data($endpoint, $parameters, $method, $contenttype);
 	$success = isset($new_poll->meta, $new_poll->meta->code) && $new_poll->meta->code == 201;
 	#$success = true;
@@ -226,6 +232,10 @@ function redirect($url) {
 		<tr>
 			<td><label for="public">Public: </label></td>
 			<td><input type="checkbox" name="public" id="public"></td>
+		</tr>
+		<tr>
+			<td><label for="public">Max. votes per person: </label></td>
+			<td><input type="number" name="maxVotes" id="public" min="1" value="1"></td>
 		</tr>
 		<tr>
 			<td>

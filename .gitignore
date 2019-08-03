@@ -7,3 +7,6 @@ pca.json
 **/roastmonday/*.json
 **/roastmonday/img/*
 clientsecret_dragonpolls
+**/beta
+*.code-workspace
+launch.json

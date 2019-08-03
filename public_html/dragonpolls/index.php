@@ -7,6 +7,22 @@ session_start();
 	<meta charset="utf-8" />
 	<title>Dragonpolls</title>
 	<link rel="stylesheet" href="styles/style.css" />
+	<script>
+		function checkMaxVotes() {
+			const maxOptions = document.getElementById('maxOptions').value;
+			const currentVotes = document.querySelectorAll('input[name="answer[]"]:checked').length;
+			console.log(maxOptions);
+			document.querySelectorAll('input[name="answer[]"]:not(:checked)').forEach( el => {
+				el.disabled = currentVotes >= maxOptions;
+			});
+			const votesLeftElement = document.getElementById('votesLeft');
+			const leftStr = currentVotes > 0 ? ' left' : '';
+			const votePluralStr = (maxOptions-currentVotes) == 1 ? '' : 's';
+			if (votesLeftElement) {
+				votesLeftElement.innerText = `${maxOptions-currentVotes} vote${votePluralStr}${leftStr}`;
+			}
+		}
+	</script>
 </head>
 <body>
 <?php
@@ -25,8 +41,9 @@ function get_auth_token() {
 $auth_token = get_auth_token();
 if ($auth_token == null) { //Not yet authorized
 	$client_id = 'kAA6Qzi6ErYcqg12ljZCGie_9u3GVXwv';
-	#$redirect_uri = 'https://wedro.online/dragonpolls/index.php';
+	$redirect_uri = 'https://wedro.online/dragonpolls/index.php';
 	$redirect_uri = 'http://localhost/dragonpolls/index.php';
+	$redirect_uri = 'http://pcabot.localhost/dragonpolls/index.php';
 	if (isset($_GET['poll'])) {
 		$redirect_uri .= '?poll='.$_GET['poll'];
 	}
@@ -57,7 +74,7 @@ if ($auth_token == null) { //Not yet authorized
 		#header($redirect_uri);
 		redirect($redirect_uri);
 	} else { //Ask user to authorize
-		echo '<a href="https://pnut.io/oauth/authenticate?clie^nt_id='.$client_id.'&redirect_uri='.urlencode($redirect_uri).'&scope=polls,write_post&response_type=code">Authorize with pnut.io</a>';
+		echo '<a href="https://pnut.io/oauth/authenticate?client_id='.$client_id.'&redirect_uri='.urlencode($redirect_uri).'&scope=polls,write_post&response_type=code">Authorize with pnut.io</a>';
 		die();
 	}
 }
@@ -227,9 +244,15 @@ if (isset($_GET['poll'])) {
 		$cl_string = "Closing at ";
 		$cl_post = ' left';
 	}
+	if (empty($poll->max_options)) {
+		$poll->max_options = 1;
+	}
 	$cl_string .= date("G:i:s T, D M j Y", $closed_at).' ('.readableDateDiff($poll->closed_at).$cl_post.')';
-	echo '<div class="box secondary">'.$cl_string.'</div></div>';
-	echo '<div><form action="?poll='.$poll_id.'" class="box">';
+	echo '<div class="box secondary">'.$cl_string.'</div></div><div>';
+	if ($poll->max_options > 1) {
+		echo 'You have <span id="votesLeft">'.$poll->max_options.' votes</span>.<br />';
+	}
+	echo'<form action="?poll='.$poll_id.'" class="box">';
 	$respondents = array();
 	$respondents_data;
 	$respondents_request_reply;
@@ -273,7 +296,8 @@ if (isset($_GET['poll'])) {
 	if (!isset($poll->is_anonymous) || $poll->is_anonymous == false) {
 		$public_state = ' public vote';
 	}
-
+	$input_type = $poll->max_options > 1 ? 'checkbox' : 'radio';
+	$changeEvent = $poll->max_options > 1 ? 'onchange=checkMaxVotes()' : '';
 	foreach ($poll->options as $option) {
 		echo '<div class="option">';
 		$checked = '';
@@ -288,7 +312,7 @@ if (isset($_GET['poll'])) {
 			$optn_status = 'disabled';
 		}
 		*/
-		echo '	<input type="radio" name="answer" value="'.$option->position.'" '.$checked.' '.$optn_status.'>';
+		echo '	<input type="'.$input_type.'" name="answer[]" value="'.$option->position.'" '.$checked.' '.$optn_status.' '.$changeEvent.'>';
 		echo '	<div class="option-wrapper">';
 		echo '		<div class="option-text">'.$option->text;
 		if (isset($option->respondents)) {
@@ -317,10 +341,17 @@ if (isset($_GET['poll'])) {
 	}
 	
 	echo '<input type="hidden" value="'.$poll_id.'" name="poll">';
+	echo '<input type="hidden" value="'.$poll->max_options.'" name="max_options" id="maxOptions">';
 	echo '<div class="submit-wrapper"><input type="submit" value="Submit'.$public_state.'" class="link-button" name="Submit"'.$status.'><div class="submit-warning" id="submit-warning">'.$status_text.'</div></div>';
 	echo '</form></div>';
 	if (isset($_GET['Submit']) && isset($_GET['answer'])) {
-		$vote = json_decode(explode("\r\n\r\n",get_data('https://api.pnut.io/v0/polls/'.$poll_id.'/response/'.$_GET['answer'], array(), "PUT"),2)[1]);
+		$answer = ['positions' => $_GET['answer']];
+		$contenttype='application/json';
+		$url = 'https://api.pnut.io/v0/polls/'.$poll_id.'/response';
+		$method = 'PUT';
+		$response = get_data($url, $answer, $method, $contenttype);
+		echo $response;
+		$vote = json_decode(explode("\r\n\r\n",$response,2)[1]);
 		if ($vote->meta->code != 200) {
 			if ($vote->meta->code == 400) {
 				die("Error: ".$vote->meta->error_message);
